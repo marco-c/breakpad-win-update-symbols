@@ -119,7 +119,7 @@ try:
     dll, pdb, uuid = bits[:3]
     if pdb and uuid:
       modules[pdb].add(uuid)
-except IOError:
+except:
   log.exception("Error fetching symbols")
   sys.exit(1)
 
