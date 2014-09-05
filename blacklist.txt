@@ -23,6 +23,13 @@ cookie.pdb
 crashinject.pdb
 crashinjectdll.pdb
 crashreporter.pdb
+d2d1.pdb
+d3d10level9.pdb
+d3d10warp.pdb
+d3d11.pdb
+d3d9.pdb
+d3dcompiler_47.pdb
+d3dim700.pdb
 dbgrobot.pdb
 detectcharset.pdb
 docshell.pdb
@@ -65,6 +72,7 @@ jscttest.pdb
 jsctypes-test.pdb
 jsd3250.pdb
 jsj3250.pdb
+kernel32.pdb
 leaksoup.pdb
 leakstats.pdb
 libegl.pdb
@@ -313,6 +321,7 @@ universalchardet.pdb
 universalchardettest.pdb
 updater.pdb
 urltest.pdb
+user32.pdb
 vmwarerecordinghelper.pdb
 wallet.pdb
 webapprt-stub.pdb
@@ -321,10 +330,12 @@ websrvcs.pdb
 windbgdlg.pdb
 windowds.pdb
 winembed.pdb
+wkernel32.pdb
 wlltvwrs.pdb
 writeargument.pdb
 wsenable.pdb
 wsprxtst.pdb
+wuser32.pdb
 xforms.pdb
 xmlextras.pdb
 xpautoc.pdb
