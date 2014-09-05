@@ -112,7 +112,7 @@ else:
 log.debug("Loading module list URL (%s)..." % url)
 try:
   for line in urlopen(url).readlines():
-    line = line.rstrip()
+    line = unicode(line.rstrip(), 'utf-8').encode('ascii', 'replace')
     bits = line.split(',')
     if len(bits) < 3:
       continue
