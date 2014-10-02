@@ -73,15 +73,18 @@ if verbose:
 log.info("Started")
 
 # Symbols that we know belong to us, so don't ask Microsoft for them.
-blacklist=set()
 try:
-  bf = file(os.path.join(thisdir, 'blacklist.txt'), 'r')
-  for line in bf:
-      blacklist.add(line.strip().lower())
-  bf.close()
+  blacklist = set(l.rstrip() for l in open(os.path.join(thisdir, 'blacklist.txt'), 'r').readlines())
 except IOError:
-  pass
+  blacklist = set()
 log.debug("Blacklist contains %d items" % len(blacklist))
+
+# Symbols that we know belong to Microsoft, so don't skiplist them.
+try:
+  known_ms_symbols = set(l.rstrip() for l in open(os.path.join(thisdir, 'known-microsoft-symbols.txt'), 'r').readlines())
+except IOError:
+  known_ms_symbols = set()
+log.debug("Known Microsoft symbols contains %d items" % len(known_ms_symbols))
 
 # Symbols that we've asked for in the past unsuccessfully
 skiplist={}
@@ -196,9 +199,12 @@ for filename, ids in modules.iteritems():
       not_found_count += 1
       # Don't skiplist this symbol if we've previously downloaded
       # other symbol versions for the same file. It's likely we'll
-      # be able to download it at some point
-      if not (os.path.exists(os.path.join(symbol_path, filename)) or
-              os.path.exists(os.path.join(config.read_only_symbol_path, filename))):
+      # be able to download it at some point.
+      if not (
+          os.path.exists(os.path.join(symbol_path, filename)) or
+          os.path.exists(os.path.join(config.read_only_symbol_path, filename)) or
+          filename in known_ms_symbols
+      ):
         log.debug("Couldn't fetch %s/%s, adding to skiplist", filename, id)
         skiplist[id] = filename
       else:
