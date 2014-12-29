@@ -114,13 +114,16 @@ else:
   url = config.csv_url % {'date': date}
 log.debug("Loading module list URL (%s)..." % url)
 try:
-  for line in urlopen(url).readlines():
+  lines = iter(urlopen(url).readlines())
+  # Skip header
+  next(lines)
+  for line in lines:
     line = unicode(line.rstrip(), 'utf-8').encode('ascii', 'replace')
     bits = line.split(',')
-    if len(bits) < 3:
+    if len(bits) < 2:
       continue
-    dll, pdb, uuid = bits[:3]
-    if pdb and uuid:
+    pdb, uuid = bits[:3]
+    if pdb and uuid and pdb.endswith('.pdb'):
       modules[pdb].add(uuid)
 except:
   log.exception("Error fetching symbols")
