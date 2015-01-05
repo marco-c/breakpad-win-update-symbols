@@ -6,9 +6,11 @@ d3d9.pdb
 d3dcompiler_47.pdb
 d3dim700.pdb
 kernel32.pdb
+kernelbase.pdb
 ntdll.pdb
 user32.pdb
 wkernel32.pdb
+wkernelbase.pdb
 wntdll.pdb
 ws2_32.pdb
 wuser32.pdb
