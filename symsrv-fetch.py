@@ -32,6 +32,7 @@ import logging
 from io import BytesIO
 from collections import defaultdict
 from tempfile import mkdtemp
+import urlparse
 import requests
 
 # Just hardcoded here
