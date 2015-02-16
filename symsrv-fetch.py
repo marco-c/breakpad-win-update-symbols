@@ -24,7 +24,7 @@ import sys
 import os
 import time, datetime
 import subprocess
-import StringIO
+import io
 import gzip
 import shutil
 import ctypes
