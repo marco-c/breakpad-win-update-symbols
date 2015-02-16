@@ -34,6 +34,7 @@ from collections import defaultdict
 from tempfile import mkdtemp
 import urllib
 import urlparse
+import zipfile
 import requests
 
 # Just hardcoded here
