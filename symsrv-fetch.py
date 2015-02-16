@@ -29,14 +29,24 @@ import gzip
 import shutil
 import ctypes
 import logging
+from io import BytesIO
 from collections import defaultdict
 from tempfile import mkdtemp
-from urllib import urlopen
+import requests
 
 # Just hardcoded here
 MICROSOFT_SYMBOL_SERVER = "http://msdl.microsoft.com/download/symbols"
+MOZILLA_SYMBOL_SERVER = "https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/"
+UPLOAD_URL = "https://crash-stats.mozilla.com/symbols/upload"
 
 thisdir = os.path.dirname(__file__)
+
+def server_has_file(filename):
+    '''
+    Send the symbol server a HEAD request to see if it has this symbol file.
+    '''
+    r = requests.head(urlparse.urljoin(MOZILLA_SYMBOL_SERVER, urllib.quote(filename)))
+    return r.status_code == 200
 
 def write_skiplist():
   try:
@@ -45,6 +55,28 @@ def write_skiplist():
           sf.write("%s %s\n" % (debug_id, debug_file))
   except IOError:
     log.exception("Error writing skiplist.txt")
+
+def upload_zip(zip_bytes, auth_token):
+  '''
+  Upload the zip file |zip_bytes| to the Socorro Symbol Upload API
+  using |auth_token| as the authentication token.
+  '''
+  r = requests.post(
+    UPLOAD_URL,
+    files={'symbols.zip': zipbytes},
+    headers={'Auth-Token': auth_token},
+    allow_redirects=False
+  )
+  if r.status_code >= 200 and r.status_code < 300:
+    log.debug('Uploaded symbols successfully')
+    return True
+
+  if r.status_code < 400:
+    log.error('Error: bad auth token? (%d)', r.status_code)
+  else:
+    log.error('Error: got a %d status', r.status_code)
+    log.error(r.text)
+  return False
 
 verbose = False
 if len(sys.argv) > 1 and sys.argv[1] == "-v":
@@ -113,23 +145,24 @@ else:
   date = (datetime.date.today() - datetime.timedelta(1)).strftime("%Y%m%d")
   url = config.csv_url % {'date': date}
 log.debug("Loading module list URL (%s)..." % url)
-try:
-  lines = iter(urlopen(url).readlines())
-  # Skip header
-  next(lines)
-  for line in lines:
-    line = unicode(line.rstrip(), 'utf-8').encode('ascii', 'replace')
-    bits = line.split(',')
-    if len(bits) < 2:
-      continue
-    pdb, uuid = bits[:3]
-    if pdb and uuid and pdb.endswith('.pdb'):
-      modules[pdb].add(uuid)
-except:
+req = requests.get(url)
+if req.status_code != 200:
   log.exception("Error fetching symbols")
   sys.exit(1)
 
-symbol_path = mkdtemp(dir=config.temp_dir)
+lines = iter(req.text.splitlines())
+# Skip header
+next(lines)
+for line in lines:
+  line = line.rstrip().encode('ascii', 'replace')
+  bits = line.split(',')
+  if len(bits) < 2:
+    continue
+  pdb, uuid = bits[:3]
+  if pdb and uuid and pdb.endswith('.pdb'):
+    modules[pdb].add(uuid)
+
+symbol_path = mkdtemp()
 
 log.debug("Fetching symbols")
 total = sum(len(ids) for ids in modules.values())
@@ -141,10 +174,6 @@ not_found_count = 0
 file_index = []
 # Now try to fetch all the unknown modules from the symbol server
 for filename, ids in modules.iteritems():
-  # Sometimes we get non-ascii in here. This is definitely not
-  # correct, but it should at least stop us from throwing.
-  filename = filename.encode('ascii', 'replace')
-
   if filename.lower() in blacklist:
     # This is one of our our debug files from Firefox/Thunderbird/etc
     current += len(ids)
@@ -163,19 +192,11 @@ for filename, ids in modules.iteritems():
       continue
     rel_path = os.path.join(filename, id,
                             filename.replace(".pdb","") + ".sym")
+    if server_has_file(rel_path):
+      log.debug("%s/%s already on server", filename, id)
+      existing_count += 1
+      continue
     sym_file = os.path.join(symbol_path, rel_path)
-    if os.path.exists(sym_file):
-      # We already have this symbol
-      log.debug("%s/%s already present", filename, id)
-      existing_count += 1
-      continue
-    if config.read_only_symbol_path != '' and \
-       os.path.exists(os.path.join(config.read_only_symbol_path, filename, id,
-                                   filename.replace(".pdb","") + ".sym")):
-      # We already have this symbol
-      log.debug("%s/%s already present", filename, id)
-      existing_count += 1
-      continue
     # Not in the blacklist, skiplist, and we don't already have it, so
     # ask the symbol server for it.
     # This expects that symsrv_convert.exe and all its dependencies
@@ -200,18 +221,8 @@ for filename, ids in modules.iteritems():
       ctypes.windll.kernel32.TerminateProcess(int(proc._handle), -1)
     elif proc.returncode != 0:
       not_found_count += 1
-      # Don't skiplist this symbol if we've previously downloaded
-      # other symbol versions for the same file. It's likely we'll
-      # be able to download it at some point.
-      if not (
-          os.path.exists(os.path.join(symbol_path, filename)) or
-          os.path.exists(os.path.join(config.read_only_symbol_path, filename)) or
-          filename in known_ms_symbols
-      ):
-        log.debug("Couldn't fetch %s/%s, adding to skiplist", filename, id)
-        skiplist[id] = filename
-      else:
-        log.debug("Couldn't fetch %s/%s, but not skiplisting", filename, id)
+      # Figure out how to manage the skiplist later...
+      log.debug("Couldn't fetch %s/%s, but not skiplisting", filename, id)
       convert_output = proc.stdout.read().strip()
       log.debug("symsrv_convert.exe output: '%s'", convert_output)
     if os.path.exists(sym_file):
@@ -231,44 +242,16 @@ if not file_index:
 buildid = time.strftime("%Y%m%d%H%M%S", time.localtime())
 index_filename = "microsoftsyms-1.0-WINNT-%s-symbols.txt" % buildid
 log.debug("Adding %s" % index_filename)
-with open(os.path.join(symbol_path, index_filename), 'w') as f:
-  f.write("\n".join(file_index))
+index_contents = "\n".join(file_index)
+with io.BytesIO() as b, zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
+  for f in file_index:
+    z.write(os.path.join(symbol_path, f), f)
+  z.writestr(index_filename, file_index)
+  z.close()
+  # Upload zip file
+  upload_zip(b.getvalue(), config.auth_token)
 
-try:
-  zipname = "microsoft-symbols-%s.zip" % buildid
-  zipfile = os.path.join(symbol_path, zipname)
-  log.debug("Zipping symbols...")
-  stdout = sys.stdout if verbose else open("NUL","w")
-  subprocess.check_call(["zip", "-r9", zipfile, "*"],
-                        cwd = symbol_path,
-                        stdout = stdout,
-                        stderr = subprocess.STDOUT)
-  log.debug("Uploading symbols...")
-
-  def msyspath(path):
-    "Translate Windows path |path| into an MSYS path"
-    path = os.path.abspath(path)
-    return "/" + path[0] + path[2:].replace("\\", "/")
-
-  subprocess.check_call(["scp", "-i", msyspath(config.symbol_privkey),
-                         msyspath(zipfile),
-                         "%s@%s:/tmp" % (config.symbol_user,
-                                         config.symbol_host)],
-                        stdout = stdout,
-                        stderr = subprocess.STDOUT)
-  log.debug("Unpacking symbols on remote host...")
-  subprocess.check_call(["ssh", "-i", msyspath(config.symbol_privkey),
-                         "-l", config.symbol_user, config.symbol_host,
-                         "umask 0022; cd '%s' && unzip -n '/tmp/%s' && /usr/local/bin/post-symbol-upload.py '%s' && rm -v '/tmp/%s'" % (config.symbol_path, zipname, index_filename, zipname)],
-                        stdout = stdout,
-                        stderr = subprocess.STDOUT)
-except Exception:
-  log.exception("Error zipping or uploading symbols")
-  sys.exit(1)
-finally:
-  if zipfile and os.path.exists(zipfile):
-    os.remove(zipfile)
-  shutil.rmtree(symbol_path, True)
+shutil.rmtree(symbol_path, True)
 
 # Write out our new skip list
 write_skiplist()
