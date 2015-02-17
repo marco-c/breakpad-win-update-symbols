@@ -88,6 +88,8 @@ if len(sys.argv) > 1 and sys.argv[1] == "-v":
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
+urllib3_logger = logging.getLogger('urllib3')
+urllib3_logger.setLevel(logging.ERROR)
 formatter = logging.Formatter(fmt="%(asctime)-15s %(message)s",
                               datefmt="%Y-%m-%d %H:%M:%S")
 filelog = logging.FileHandler(filename=os.path.join(thisdir,
