@@ -66,7 +66,7 @@ def upload_zip(zip_bytes, auth_token):
   '''
   r = requests.post(
     UPLOAD_URL,
-    files={'symbols.zip': zipbytes},
+    files={'symbols.zip': zip_bytes},
     headers={'Auth-Token': auth_token},
     allow_redirects=False
   )
