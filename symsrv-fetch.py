@@ -48,8 +48,11 @@ def server_has_file(filename):
     '''
     Send the symbol server a HEAD request to see if it has this symbol file.
     '''
-    r = requests.head(urlparse.urljoin(MOZILLA_SYMBOL_SERVER, urllib.quote(filename)))
-    return r.status_code == 200
+    try:
+        r = requests.head(urlparse.urljoin(MOZILLA_SYMBOL_SERVER, urllib.quote(filename)))
+        return r.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
 
 def write_skiplist():
   try:
@@ -64,12 +67,17 @@ def upload_zip(zip_bytes, auth_token):
   Upload the zip file |zip_bytes| to the Socorro Symbol Upload API
   using |auth_token| as the authentication token.
   '''
-  r = requests.post(
-    UPLOAD_URL,
-    files={'symbols.zip': zip_bytes},
-    headers={'Auth-Token': auth_token},
-    allow_redirects=False
-  )
+  try:
+      r = requests.post(
+        UPLOAD_URL,
+        files={'symbols.zip': zip_bytes},
+        headers={'Auth-Token': auth_token},
+        allow_redirects=False
+      )
+  except requests.exceptions.RequestException as e:
+      log.error('Error: %s', e)
+      return False
+
   if r.status_code >= 200 and r.status_code < 300:
     log.debug('Uploaded symbols successfully')
     return True
@@ -150,8 +158,12 @@ else:
   date = (datetime.date.today() - datetime.timedelta(1)).strftime("%Y%m%d")
   url = config.csv_url % {'date': date}
 log.debug("Loading module list URL (%s)..." % url)
-req = requests.get(url)
-if req.status_code != 200:
+fetch_error = False
+try:
+    req = requests.get(url)
+except requests.exceptions.RequestException as e:
+    fetch_error = True
+if fetch_error or req.status_code != 200:
   log.exception("Error fetching symbols")
   sys.exit(1)
 
