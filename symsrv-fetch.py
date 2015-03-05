@@ -86,7 +86,6 @@ def upload_zip(zip_bytes, auth_token):
     log.error('Error: bad auth token? (%d)', r.status_code)
   else:
     log.error('Error: got a %d status', r.status_code)
-    log.error(r.text)
   return False
 
 verbose = False
@@ -259,18 +258,20 @@ if not file_index:
 buildid = time.strftime("%Y%m%d%H%M%S", time.localtime())
 index_filename = "microsoftsyms-1.0-WINNT-%s-symbols.txt" % buildid
 log.debug("Adding %s" % index_filename)
+success = False
 with io.BytesIO() as b, zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
   for f in file_index:
     z.write(os.path.join(symbol_path, f), f)
   z.writestr(index_filename, "\n".join(file_index))
   z.close()
   # Upload zip file
-  upload_zip(b.getvalue(), config.auth_token)
+  success = upload_zip(b.getvalue(), config.auth_token)
 
 shutil.rmtree(symbol_path, True)
 
 # Write out our new skip list
 write_skiplist()
 
-log.info("Uploaded %d symbol files" % len(file_index))
+if success:
+    log.info("Uploaded %d symbol files" % len(file_index))
 log.info("Finished, exiting")
