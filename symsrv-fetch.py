@@ -30,13 +30,14 @@ import zipfile
 import requests
 
 # Just hardcoded here
-MICROSOFT_SYMBOL_SERVER = 'http://msdl.microsoft.com/download/symbols'
+MICROSOFT_SYMBOL_SERVER = 'http://msdl.microsoft.com/download/symbols/'
 USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
 MOZILLA_SYMBOL_SERVER = ('https://s3-us-west-2.amazonaws.com/'
                          'org.mozilla.crash-stats.symbols-public/v1/')
 UPLOAD_URL = 'https://crash-stats.mozilla.com/symbols/upload'
 
 thisdir = os.path.dirname(__file__)
+log = logging.getLogger()
 
 
 def fetch_symbol(debug_id, debug_file):
@@ -127,7 +128,6 @@ def main():
         verbose = True
         sys.argv.pop(1)
 
-    log = logging.getLogger()
     log.setLevel(logging.DEBUG)
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.ERROR)
@@ -318,7 +318,7 @@ def main():
     shutil.rmtree(symbol_path, True)
 
     # Write out our new skip list
-    write_skiplist()
+    write_skiplist(skiplist)
 
     if success:
         log.info('Uploaded %d symbol files' % len(file_index))
