@@ -21,7 +21,6 @@ import gzip
 import shutil
 import ctypes
 import logging
-from io import BytesIO
 from collections import defaultdict
 from tempfile import mkdtemp
 import urllib
@@ -94,32 +93,6 @@ def write_skiplist(skiplist):
     except IOError:
         log.exception('Error writing skiplist.txt')
 
-
-def upload_zip(zip_bytes, auth_token):
-    '''
-    Upload the zip file |zip_bytes| to the Socorro Symbol Upload API
-    using |auth_token| as the authentication token.
-    '''
-    try:
-        r = requests.post(
-            UPLOAD_URL,
-            files={'symbols.zip': zip_bytes},
-            headers={'Auth-Token': auth_token},
-            allow_redirects=False
-        )
-    except requests.exceptions.RequestException as e:
-        log.error('Error: %s', e)
-        return False
-
-    if r.status_code >= 200 and r.status_code < 300:
-        log.debug('Uploaded symbols successfully')
-        return True
-
-    if r.status_code < 400:
-        log.error('Error: bad auth token? (%d)', r.status_code)
-    else:
-        log.error('Error: got a %d status', r.status_code)
-    return False
 
 
 def main():
@@ -220,14 +193,14 @@ def main():
         bits = line.split(',')
         if len(bits) < 2:
             continue
-        pdb, uuid = bits[:3]
+        pdb, uuid = bits[:2]
         if pdb and uuid and pdb.endswith('.pdb'):
             modules[pdb].add(uuid)
 
-    symbol_path = mkdtemp()
+    symbol_path = mkdtemp('symsrvfetch')
     temp_path = mkdtemp(prefix='symtmp')
 
-    log.debug('Fetching symbols')
+    log.debug("Fetching symbols (%d pdb files)" % len(modules))
     total = sum(len(ids) for ids in modules.values())
     current = 0
     blacklist_count = 0
@@ -303,17 +276,18 @@ def main():
     index_filename = 'microsoftsyms-1.0-WINNT-%s-symbols.txt' % buildid
     log.debug('Adding %s' % index_filename)
     success = False
-    with io.BytesIO() as b, zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
+    zipname = "symbols-%s.zip" % buildid
+    with zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED) as z:
         for f in file_index:
             z.write(os.path.join(symbol_path, f), f)
         z.writestr(index_filename, '\n'.join(file_index))
-        z.close()
-        # Upload zip file
-        success = upload_zip(b.getvalue(), config.auth_token)
-        if not success:
-            tmpzip = '/tmp/symbols-%s.zip' % buildid
-            open(tmpzip, 'wb').write(b.getvalue())
-            log.info('Failed to upload, wrote zip as %s' % tmpzip)
+    # Upload zip file
+    if hasattr(config, 'upload_url'):
+        os.environ['SOCORRO_SYMBOL_UPLOAD_URL'] = config.upload_url
+    from upload_symbols import upload_symbol_zip
+    success = upload_symbol_zip(zipname, config.auth_token, log) == 0
+    if not success:
+        log.info('Failed to upload, wrote zip as %s' % tmpzip)
 
     shutil.rmtree(symbol_path, True)
 
