@@ -34,6 +34,7 @@ USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
 MOZILLA_SYMBOL_SERVER = ('https://s3-us-west-2.amazonaws.com/'
                          'org.mozilla.crash-stats.symbols-public/v1/')
 UPLOAD_URL = 'https://crash-stats.mozilla.com/symbols/upload'
+MISSING_SYMBOLS_URL = 'https://crash-analysis.mozilla.com/crash_analysis/{date}/{date}-missing-symbols.txt'
 
 thisdir = os.path.dirname(__file__)
 log = logging.getLogger()
@@ -95,7 +96,19 @@ def write_skiplist(skiplist):
 
 
 
-def main():
+def fetch_missing_symbols(log):
+    now = datetime.datetime.now()
+    for n in range(5):
+        d = now + datetime.timedelta(days=-n)
+        u = MISSING_SYMBOLS_URL.format(date=d.strftime('%Y%m%d'))
+        log.info('Trying missing symbols from %s' % u)
+        r = requests.get(u)
+        if r.status_code == 200 and len(r.text) > 0:
+            return r.text
+    return None
+
+
+def main():    
     verbose = False
     if len(sys.argv) > 1 and sys.argv[1] == '-v':
         verbose = True
@@ -171,21 +184,20 @@ def main():
     modules = defaultdict(set)
     if len(sys.argv) > 1:
         url = sys.argv[1]
+        log.debug("Loading missing symbols URL %s" % url)
+        fetch_error = False
+        try:
+            req = requests.get(url)
+        except requests.exceptions.RequestException as e:
+            fetch_error = True
+        if fetch_error or req.status_code != 200:
+            log.exception("Error fetching symbols")
+            sys.exit(1)
+        missing_symbols = req.text
     else:
-        date = (datetime.date.today() -
-                datetime.timedelta(1)).strftime('%Y%m%d')
-        url = config.csv_url % {'date': date}
-    log.debug('Loading module list URL (%s)...' % url)
-    fetch_error = False
-    try:
-        req = requests.get(url)
-    except requests.exceptions.RequestException as e:
-        fetch_error = True
-    if fetch_error or req.status_code != 200:
-        log.exception('Error fetching symbols')
-        sys.exit(1)
+        missing_symbols = fetch_missing_symbols(log)
 
-    lines = iter(req.text.splitlines())
+    lines = iter(missing_symbols.splitlines())
     # Skip header
     next(lines)
     for line in lines:
