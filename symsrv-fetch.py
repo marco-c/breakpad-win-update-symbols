@@ -184,16 +184,20 @@ def main():
     modules = defaultdict(set)
     if len(sys.argv) > 1:
         url = sys.argv[1]
-        log.debug("Loading missing symbols URL %s" % url)
-        fetch_error = False
-        try:
-            req = requests.get(url)
-        except requests.exceptions.RequestException as e:
-            fetch_error = True
-        if fetch_error or req.status_code != 200:
-            log.exception("Error fetching symbols")
-            sys.exit(1)
-        missing_symbols = req.text
+        if os.path.isfile(url):
+            log.debug("Loading missing symbols file %s" % url)
+            missing_symbols = open(url, 'r').read()
+        else:
+            log.debug("Loading missing symbols URL %s" % url)
+            fetch_error = False
+            try:
+                req = requests.get(url)
+            except requests.exceptions.RequestException as e:
+                fetch_error = True
+            if fetch_error or req.status_code != 200:
+                log.exception("Error fetching symbols")
+                sys.exit(1)
+            missing_symbols = req.text
     else:
         missing_symbols = fetch_missing_symbols(log)
 
