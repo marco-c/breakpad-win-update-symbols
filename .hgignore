@@ -15,3 +15,5 @@
 ^symsrv_convert/symsrv_convert\.vcxproj\.
 \.ipch$
 ^verbose\.log$
+^venv/
+
