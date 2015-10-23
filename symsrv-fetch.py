@@ -10,6 +10,7 @@
 # installed in, to write the skiplist text file.
 
 from __future__ import with_statement
+import codecs
 import config
 import sys
 import os
@@ -34,10 +35,15 @@ USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
 MOZILLA_SYMBOL_SERVER = ('https://s3-us-west-2.amazonaws.com/'
                          'org.mozilla.crash-stats.symbols-public/v1/')
 UPLOAD_URL = 'https://crash-stats.mozilla.com/symbols/upload'
-MISSING_SYMBOLS_URL = 'https://crash-analysis.mozilla.com/crash_analysis/{date}/{date}-missing-symbols.txt'
+MISSING_SYMBOLS_URL = ('https://crash-analysis.mozilla.com/crash_analysis/'
+                       '{date}/{date}-missing-symbols.txt')
 
 thisdir = os.path.dirname(__file__)
 log = logging.getLogger()
+
+
+class Win64ProcessError(Exception):
+    pass
 
 
 def fetch_symbol(debug_id, debug_file):
@@ -55,19 +61,44 @@ def fetch_symbol(debug_id, debug_file):
     return None
 
 
-def fetch_and_dump_symbols(tmpdir, debug_id, debug_file):
-    pdb_bytes = fetch_symbol(debug_id, debug_file)
-    if not pdb_bytes or not pdb_bytes.startswith(b'MSCF'):
+def fetch_symbol_and_decompress(tmpdir, debug_id, debug_file):
+    '''
+    Attempt to fetch a PDB file from Microsoft's symbol server, then
+    write a decompressed version to tmpdir.
+    Returns the filename if successful, or None if unsuccessful.
+    '''
+    data = fetch_symbol(debug_id, debug_file)
+    if not data or not data.startswith(b'MSCF'):
         return None
-    pdb_path = os.path.join(tmpdir, debug_file[:-1] + '_')
-    with open(pdb_path, 'wb') as f:
-        f.write(pdb_bytes)
+    path = os.path.join(tmpdir, debug_file[:-1] + '_')
+    with open(path, 'wb') as f:
+        f.write(data)
     try:
         # Decompress it
-        subprocess.check_call(['cabextract', '-d', tmpdir, pdb_path])
-        pdb_path = os.path.join(tmpdir, debug_file)
+        subprocess.check_call(['cabextract', '-d', tmpdir, path],
+                              stdout=open(os.devnull, 'wb'))
+        os.unlink(path)
+        return os.path.join(tmpdir, debug_file)
+    except subprocess.CalledProcessError:
+        return None
+
+
+def fetch_and_dump_symbols(tmpdir, debug_id, debug_file,
+                           code_id=None, code_file=None):
+    pdb_path = fetch_symbol_and_decompress(tmpdir, debug_id, debug_file)
+    if pdb_path is None:
+        return None
+    try:
         # Dump it
-        return subprocess.check_output(config.dump_syms_cmd + [pdb_path])
+        syms = subprocess.check_output(config.dump_syms_cmd + [pdb_path])
+        lines = syms.splitlines()
+        if not lines:
+            return None
+        if lines[0].split()[2] == 'x86_64':
+            # Can't dump useful symbols for Win64 PDBs without binaries.
+            # TODO: fetch binaries
+            raise Win64ProcessError()
+        return syms
     except subprocess.CalledProcessError:
         return None
 
@@ -95,7 +126,6 @@ def write_skiplist(skiplist):
         log.exception('Error writing skiplist.txt')
 
 
-
 def fetch_missing_symbols(log):
     now = datetime.datetime.now()
     for n in range(5):
@@ -108,7 +138,7 @@ def fetch_missing_symbols(log):
     return None
 
 
-def main():    
+def main():
     verbose = False
     if len(sys.argv) > 1 and sys.argv[1] == '-v':
         verbose = True
@@ -132,6 +162,7 @@ def main():
         log.addHandler(handler)
         verboselog = logging.FileHandler(filename=os.path.join(thisdir,
                                                                'verbose.log'))
+        verboselog.setFormatter(formatter)
         log.addHandler(verboselog)
 
     log.info('Started')
@@ -186,7 +217,7 @@ def main():
         url = sys.argv[1]
         if os.path.isfile(url):
             log.debug("Loading missing symbols file %s" % url)
-            missing_symbols = open(url, 'r').read()
+            missing_symbols = codecs.open(url, 'r', 'utf_8').read()
         else:
             log.debug("Loading missing symbols URL %s" % url)
             fetch_error = False
@@ -210,8 +241,11 @@ def main():
         if len(bits) < 2:
             continue
         pdb, uuid = bits[:2]
+        code_file, code_id = None, None
+        if len(bits) >= 4:
+            code_file, code_id = bits[2:4]
         if pdb and uuid and pdb.endswith('.pdb'):
-            modules[pdb].add(uuid)
+            modules[pdb].add((uuid, code_file, code_id))
 
     symbol_path = mkdtemp('symsrvfetch')
     temp_path = mkdtemp(prefix='symtmp')
@@ -223,6 +257,7 @@ def main():
     skiplist_count = 0
     existing_count = 0
     not_found_count = 0
+    not_processed_count = 0
     file_index = []
     # Now try to fetch all the unknown modules from the symbol server
     for filename, ids in modules.iteritems():
@@ -231,7 +266,7 @@ def main():
             current += len(ids)
             blacklist_count += len(ids)
             continue
-        for id in ids:
+        for (id, code_file, code_id) in ids:
             current += 1
             if verbose:
                 sys.stdout.write('[%6d/%6d] %3d%% %-20s\r' %
@@ -252,25 +287,30 @@ def main():
                 continue
             # Not in the blacklist, skiplist, and we don't already have it, so
             # ask the symbol server for it.
-            sym_output = fetch_and_dump_symbols(temp_path,
-                                                id, filename)
-            if sym_output is None:
-                not_found_count += 1
-                # Figure out how to manage the skiplist later...
-                log.debug(
-                    'Couldn\'t fetch %s/%s, but not skiplisting',
-                    filename,
-                    id)
-            else:
-                log.debug('Successfully downloaded %s/%s', filename, id)
-                file_index.append(rel_path.replace('\\', '/'))
-                sym_file = os.path.join(symbol_path, rel_path)
-                try:
-                    os.makedirs(os.path.dirname(sym_file))
-                except OSError:
-                    pass
-                # TODO: just add to in-memory zipfile
-                open(sym_file, 'w').write(sym_output)
+            try:
+                sym_output = fetch_and_dump_symbols(temp_path,
+                                                    id, filename,
+                                                    code_id, code_file)
+                if sym_output is None:
+                    not_found_count += 1
+                    # Figure out how to manage the skiplist later...
+                    log.debug(
+                        'Couldn\'t fetch %s/%s, but not skiplisting',
+                        filename,
+                        id)
+                else:
+                    log.debug('Successfully downloaded %s/%s', filename, id)
+                    file_index.append(rel_path.replace('\\', '/'))
+                    sym_file = os.path.join(symbol_path, rel_path)
+                    try:
+                        os.makedirs(os.path.dirname(sym_file))
+                    except OSError:
+                        pass
+                    # TODO: just add to in-memory zipfile
+                    open(sym_file, 'w').write(sym_output)
+            except Win64ProcessError:
+                log.warn('Skipping Win64 PDB: %s' % debug_file)
+                not_processed_count += 1
 
     if verbose:
         sys.stdout.write('\n')
@@ -278,12 +318,14 @@ def main():
     if not file_index:
         log.info(
             'No symbols downloaded: %d considered, '
-            '%d already present, %d in blacklist, %d skipped, %d not found' %
+            '%d already present, %d in blacklist, %d skipped, %d not found, '
+            '%d not processed ' %
             (total,
              existing_count,
              blacklist_count,
              skiplist_count,
-             not_found_count))
+             not_found_count,
+             not_processed_count))
         write_skiplist(skiplist)
         sys.exit(0)
 
@@ -297,21 +339,13 @@ def main():
         for f in file_index:
             z.write(os.path.join(symbol_path, f), f)
         z.writestr(index_filename, '\n'.join(file_index))
-    # Upload zip file
-    if hasattr(config, 'upload_url'):
-        os.environ['SOCORRO_SYMBOL_UPLOAD_URL'] = config.upload_url
-    from upload_symbols import upload_symbol_zip
-    success = upload_symbol_zip(zipname, config.auth_token, log) == 0
-    if not success:
-        log.info('Failed to upload, wrote zip as %s' % tmpzip)
+    log.info('Wrote zip as %s' % zipname)
 
     shutil.rmtree(symbol_path, True)
 
     # Write out our new skip list
     write_skiplist(skiplist)
-
-    if success:
-        log.info('Uploaded %d symbol files' % len(file_index))
+    log.info('Stored %d symbol files' % len(file_index))
     log.info('Finished, exiting')
 
 if __name__ == '__main__':

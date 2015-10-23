@@ -79,7 +79,7 @@ def upload_symbol_zip(zipfile, auth_token, log=logging.getLogger()):
                 files={'symbols.zip': open(zipfile, 'rb')},
                 headers={'Auth-Token': auth_token},
                 allow_redirects=False,
-                timeout=120)
+                timeout=1000)
             # 500 is likely to be a transient failure.
             # Break out for success or other error codes.
             if r.status_code  != 500:
