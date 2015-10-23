@@ -79,7 +79,6 @@ def spawn_task_graph(scheduler):
         keys['task_deadline'] = format_timedelta(now, hours=5)
         keys['artifacts_expires'] = format_timedelta(now, days=1)
         payload = fill_template(template, keys)
-    json.dump(payload, open('/tmp/payload.json', 'wb'))
     scheduler.createTaskGraph(graph_id, payload)
     return graph_id
 
