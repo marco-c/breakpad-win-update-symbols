@@ -10,6 +10,7 @@ import argparse
 import datetime
 import json
 import os
+import sys
 import taskcluster
 
 import requests.packages.urllib3
@@ -93,12 +94,15 @@ def main():
 
     args = parser.parse_args()
     tc_auth = read_tc_auth(args.taskcluster_auth)
-    scheduler = taskcluster.Scheduler({'credentials': tc_auth})
-    graph_id = spawn_task_graph(scheduler)
-    u = 'https://tools.taskcluster.net/task-graph-inspector/#{0}/'.format(
-        graph_id
-    )
-    print(u)
+    try:
+        scheduler = taskcluster.Scheduler({'credentials': tc_auth})
+        graph_id = spawn_task_graph(scheduler)
+        u = 'https://tools.taskcluster.net/task-graph-inspector/#{0}/'.format(
+            graph_id
+        )
+        print(u)
+    except taskcluster.exceptions.TaskclusterAuthFailure as e:
+        print('TaskclusterAuthFailure: {}'.format(e.body), file=sys.stderr)
 
 
 if __name__ == '__main__':

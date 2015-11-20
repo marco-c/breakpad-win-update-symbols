@@ -6,9 +6,10 @@
         "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/"
     },
     "scopes": [
-        "queue:*",
-        "docker-worker:*",
-        "scheduler:*"
+        "docker-worker:relengapi-proxy:tooltool.download.internal",
+        "docker-worker:image:taskclusterprivate/upload_symbols:0.0.3",
+        "queue:create-task:aws-provisioner-v1/emulator-jb",
+        "queue:create-task:aws-provisioner-v1/symbol-upload"
     ],
     "tasks": [
         {
