@@ -39,7 +39,7 @@
                             "expires": "{artifacts_expires}"
                         }
                     },
-                    "maxRunTime": 7200
+                    "maxRunTime": 18000
                 },
                 "metadata": {
                     "name": "fetch-win32-symbols",
