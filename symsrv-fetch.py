@@ -9,7 +9,6 @@
 # The script also depends on having write access to the directory it is
 # installed in, to write the skiplist text file.
 
-from __future__ import with_statement
 import codecs
 import config
 import sys
@@ -75,10 +74,10 @@ def fetch_symbol_and_decompress(tmpdir, debug_id, debug_file):
         f.write(data)
     try:
         # Decompress it
-        subprocess.check_call(['cabextract', '-d', tmpdir, path],
+        subprocess.check_call(['cabextract', '-L', '-d', tmpdir, path],
                               stdout=open(os.devnull, 'wb'))
         os.unlink(path)
-        return os.path.join(tmpdir, debug_file)
+        return os.path.join(tmpdir, debug_file.lower())
     except subprocess.CalledProcessError:
         return None
 
@@ -88,19 +87,27 @@ def fetch_and_dump_symbols(tmpdir, debug_id, debug_file,
     pdb_path = fetch_symbol_and_decompress(tmpdir, debug_id, debug_file)
     if pdb_path is None:
         return None
-    try:
-        # Dump it
-        syms = subprocess.check_output(config.dump_syms_cmd + [pdb_path])
-        lines = syms.splitlines()
-        if not lines:
+    while True:
+        bin_path = None
+        try:
+            # Dump it
+            syms = subprocess.check_output(config.dump_syms_cmd + [pdb_path])
+            lines = syms.splitlines()
+            if not lines:
+                return None
+            os.unlink(pdb_path)
+            if bin_path:
+                os.unlink(bin_path)
+            return syms
+        except subprocess.CalledProcessError as e:
+            if bin_path is None and e.output.splitlines()[0].split()[2] == 'x86_64':
+                # Can't dump useful symbols for Win64 PDBs without binaries.
+                if code_id and code_file:
+                    bin_path = fetch_symbol_and_decompress(tmpdir, code_id, code_file)
+                    continue
+                else:
+                    raise Win64ProcessError()
             return None
-        if lines[0].split()[2] == 'x86_64':
-            # Can't dump useful symbols for Win64 PDBs without binaries.
-            # TODO: fetch binaries
-            raise Win64ProcessError()
-        return syms
-    except subprocess.CalledProcessError:
-        return None
 
 
 def server_has_file(filename):
@@ -309,7 +316,7 @@ def main():
                     # TODO: just add to in-memory zipfile
                     open(sym_file, 'w').write(sym_output)
             except Win64ProcessError:
-                log.warn('Skipping Win64 PDB: %s' % debug_file)
+                log.warn('Skipping Win64 PDB: %s/%s' % (filename, id))
                 not_processed_count += 1
 
     if verbose:
