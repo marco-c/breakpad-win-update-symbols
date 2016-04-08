@@ -16,4 +16,5 @@
 \.ipch$
 ^verbose\.log$
 ^venv/
-
+^taskcluster-auth\.json$
+^cron\.log$

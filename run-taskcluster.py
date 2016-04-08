@@ -24,11 +24,11 @@ def local_file(filename):
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-def read_tc_auth(tc_auth_file):
+def read_tc_auth():
     '''
-    Read taskcluster credentials from tc_auth_file and return them as a dict.
+    Read taskcluster credentials from taskcluster-auth.json and return them as a dict.
     '''
-    return json.load(open(tc_auth_file, 'rb'))
+    return json.load(open(local_file('taskcluster-auth.json'), 'rb'))
 
 
 def fill_template_property(val, keys):
@@ -87,13 +87,9 @@ def spawn_task_graph(scheduler):
 def main():
     parser = argparse.ArgumentParser(
         description='Build and upload minidump_stackwalk binaries')
-    parser.add_argument('taskcluster_auth',
-                        help='Path to a file containing Taskcluster client' +
-                        ' ID and authentication token as a JSON file in the' +
-                        ' form {"clientId": "...", "accessToken": "..."}')
 
     args = parser.parse_args()
-    tc_auth = read_tc_auth(args.taskcluster_auth)
+    tc_auth = read_tc_auth()
     try:
         scheduler = taskcluster.Scheduler({'credentials': tc_auth})
         graph_id = spawn_task_graph(scheduler)
@@ -103,6 +99,7 @@ def main():
         print(u)
     except taskcluster.exceptions.TaskclusterAuthFailure as e:
         print('TaskclusterAuthFailure: {}'.format(e.body), file=sys.stderr)
+        raise
 
 
 if __name__ == '__main__':
