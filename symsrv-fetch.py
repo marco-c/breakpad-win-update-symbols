@@ -87,8 +87,8 @@ def fetch_and_dump_symbols(tmpdir, debug_id, debug_file,
     pdb_path = fetch_symbol_and_decompress(tmpdir, debug_id, debug_file)
     if pdb_path is None:
         return None
+    bin_path = None
     while True:
-        bin_path = None
         try:
             # Dump it
             syms = subprocess.check_output(config.dump_syms_cmd + [pdb_path])
@@ -103,7 +103,14 @@ def fetch_and_dump_symbols(tmpdir, debug_id, debug_file,
             if bin_path is None and e.output.splitlines()[0].split()[2] == 'x86_64':
                 # Can't dump useful symbols for Win64 PDBs without binaries.
                 if code_id and code_file:
+                    log.debug('Fetching binary %s, %s', code_id, code_file)
                     bin_path = fetch_symbol_and_decompress(tmpdir, code_id, code_file)
+                    if bin_path:
+                        log.debug('Fetched binary %s', bin_path)
+                    else:
+                        log.warn("Couldn't fetch binary for %s, %s",
+                                 code_id, code_file)
+                        raise Win64ProcessError()
                     continue
                 else:
                     raise Win64ProcessError()
