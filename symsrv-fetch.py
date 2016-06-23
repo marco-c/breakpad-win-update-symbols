@@ -49,8 +49,7 @@ USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
 MOZILLA_SYMBOL_SERVER = ('https://s3-us-west-2.amazonaws.com/'
                          'org.mozilla.crash-stats.symbols-public/v1/')
 UPLOAD_URL = 'https://crash-stats.mozilla.com/symbols/upload'
-MISSING_SYMBOLS_URL = ('https://crash-analysis.mozilla.com/crash_analysis/'
-                       '{date}/{date}-missing-symbols.txt')
+MISSING_SYMBOLS_URL = 'https://org-mozilla-missingsymbols.s3.amazonaws.com/latest.csv'
 
 thisdir = os.path.dirname(__file__)
 log = logging.getLogger()
@@ -156,14 +155,11 @@ def write_skiplist(skiplist):
 
 
 def fetch_missing_symbols(log):
-    now = datetime.datetime.now()
-    for n in range(5):
-        d = now + datetime.timedelta(days=-n)
-        u = MISSING_SYMBOLS_URL.format(date=d.strftime('%Y%m%d'))
-        log.info('Trying missing symbols from %s' % u)
-        r = requests.get(u)
-        if r.status_code == 200 and len(r.text) > 0:
-            return r.text
+    u = MISSING_SYMBOLS_URL
+    log.info('Trying missing symbols from %s' % u)
+    r = requests.get(u)
+    if r.status_code == 200 and len(r.text) > 0:
+        return r.text
     return None
 
 
