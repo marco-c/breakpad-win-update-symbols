@@ -23,7 +23,7 @@
                     "docker-worker:relengapi-proxy:tooltool.download.internal"
                 ],
                 "payload": {
-                    "image": "luser/fetch-win32-symbols:0.2",
+                    "image": "luser/fetch-win32-symbols:0.3",
                     "command": [
                         "/bin/sh",
                         "run.sh"
