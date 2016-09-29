@@ -8,7 +8,7 @@
     "scopes": [
         "docker-worker:relengapi-proxy:tooltool.download.internal",
         "docker-worker:image:taskclusterprivate/upload_symbols:0.0.3",
-        "queue:create-task:aws-provisioner-v1/emulator-jb",
+        "queue:create-task:aws-provisioner-v1/b2gtest",
         "queue:create-task:aws-provisioner-v1/symbol-upload"
     ],
     "tasks": [
@@ -16,7 +16,7 @@
             "taskId": "{task_id_0}",
             "task": {
                 "provisionerId": "aws-provisioner-v1",
-                "workerType": "emulator-jb",
+                "workerType": "b2gtest",
                 "created": "{task_created}",
                 "deadline": "{task_deadline}",
                 "scopes": [
