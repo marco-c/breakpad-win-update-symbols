@@ -92,7 +92,7 @@ def spawn_task_graph(scheduler):
     with open(local_file('task.json'), 'rb') as template:
         now = datetime.datetime.utcnow()
         keys['task_created'] = format_timedelta(now)
-        keys['task_deadline'] = format_timedelta(now, hours=5)
+        keys['task_deadline'] = format_timedelta(now, hours=8)
         keys['artifacts_expires'] = format_timedelta(now, days=1)
         payload = fill_template(template, keys)
     scheduler.createTaskGraph(graph_id, payload)
