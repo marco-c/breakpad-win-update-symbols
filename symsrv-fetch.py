@@ -124,7 +124,10 @@ def fetch_and_dump_symbols(tmpdir, debug_id, debug_file,
                 os.unlink(bin_path)
             return syms
         except subprocess.CalledProcessError as e:
-            if bin_path is None and e.output.splitlines()[0].split()[2] == 'x86_64':
+            lines = e.output.splitlines()
+            bits = lines[0].split() if len(lines) > 0 else []
+            cpu = bits[2] if len(bits) > 2 else ''
+            if bin_path is None and cpu == 'x86_64':
                 # Can't dump useful symbols for Win64 PDBs without binaries.
                 if code_id and code_file:
                     log.debug('Fetching binary %s, %s', code_id, code_file)

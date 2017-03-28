@@ -2,7 +2,7 @@
 
 set -v -e -x
 
-: SCRIPT_URL              ${SCRIPT_URL:=https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/raw-file/tip/symsrv-fetch.py}
+: SCRIPT_URL              ${SCRIPT_URL:=https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/raw-file/default/symsrv-fetch.py}
 
 cd dump_syms
 if test -n "$LOCAL"; then
