@@ -59,6 +59,13 @@ class Win64ProcessError(Exception):
     pass
 
 
+# Don't run continuously for more than 2 hours.
+MAX_RUNTIME_SECS = 7200
+
+def timed_out(start):
+    return (datetime.datetime.now() - start).total_seconds() > MAX_RUNTIME_SECS
+
+
 def fetch_symbol(debug_id, debug_file):
     '''
     Attempt to fetch a PDB file from Microsoft's symbol server.
@@ -167,6 +174,7 @@ def fetch_missing_symbols(log):
 
 
 def main():
+    start = datetime.datetime.now()
     verbose = False
     if len(sys.argv) > 1 and sys.argv[1] == '-v':
         verbose = True
@@ -289,12 +297,16 @@ def main():
     file_index = []
     # Now try to fetch all the unknown modules from the symbol server
     for filename, ids in modules.iteritems():
+        if timed_out(start):
+            break
         if filename.lower() in blacklist:
             # This is one of our our debug files from Firefox/Thunderbird/etc
             current += len(ids)
             blacklist_count += len(ids)
             continue
         for (id, code_file, code_id) in ids:
+            if timed_out(start):
+                break
             current += 1
             if verbose:
                 sys.stdout.write('[%6d/%6d] %3d%% %-20s\r' %
