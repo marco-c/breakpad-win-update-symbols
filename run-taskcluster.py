@@ -86,7 +86,7 @@ def spawn_task(queue, keys, decision_task_id, template_file):
     with open(local_file(template_file), 'rb') as template:
         payload = fill_template(template, keys)
         if decision_task_id and not payload.get('dependencies'):
-            payload['dependencies'] = decision_task_id
+            payload['dependencies'] = [decision_task_id]
         queue.createTask(task_id, payload)
     return task_id
 
