@@ -81,37 +81,41 @@ def format_timedelta(d, **kwargs):
     return d.isoformat() + 'Z'
 
 
-def spawn_task_graph(scheduler):
-    '''
-    Spawn a Taskcluster task graph in scheduler.
-    '''
-    graph_id = taskcluster.utils.slugId()
-    keys = {}
-    for i in range(2):
-        keys['task_id_{}'.format(i)] = taskcluster.utils.slugId()
-    with open(local_file('task.json'), 'rb') as template:
-        now = datetime.datetime.utcnow()
-        keys['task_created'] = format_timedelta(now)
-        keys['task_deadline'] = format_timedelta(now, hours=8)
-        keys['artifacts_expires'] = format_timedelta(now, days=1)
+def spawn_task(queue, keys, decision_task_id, template_file):
+    task_id = taskcluster.utils.slugId()
+    with open(local_file(template_file), 'rb') as template:
         payload = fill_template(template, keys)
-    scheduler.createTaskGraph(graph_id, payload)
-    return graph_id
+        if decision_task_id and not payload.get('dependencies'):
+            payload['dependencies'] = decision_task_id
+        queue.createTask(task_id, payload)
+    return task_id
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Build and upload minidump_stackwalk binaries')
+        description='Spawn tasks to fetch missing symbols from Microsoft symbol server')
 
     args = parser.parse_args()
-    tc_auth = read_tc_auth()
+    decision_task_id = os.environ.get('TASK_ID')
+    if decision_task_id:
+        task_group_id = decision_task_id
+        options = {'baseUrl': 'http://taskcluster/queue/v1/'}
+    else:
+        task_group_id = taskcluster.utils.slugId()
+        options = {'credentials': read_tc_auth()}
+    now = datetime.datetime.utcnow()
+    keys = {
+        'task_group_id': task_group_id,
+        'task_created': format_timedelta(now),
+        'task_deadline': format_timedelta(now, hours=8),
+        'artifacts_expires': format_timedelta(now, days=1),
+    }
     try:
-        scheduler = taskcluster.Scheduler({'credentials': tc_auth})
-        graph_id = spawn_task_graph(scheduler)
-        u = 'https://tools.taskcluster.net/task-graph-inspector/#{0}/'.format(
-            graph_id
-        )
-        print(u)
+        queue = taskcluster.Queue(options)
+        fetch_task_id = spawn_task(queue, keys, decision_task_id, "fetch-task.json")
+        keys['fetch_task_id'] = fetch_task_id
+        spawn_task(queue, keys, decision_task_id, "upload-task.json")
+        print('https://tools.taskcluster.net/task-group-inspector/#/' + task_group_id)
     except taskcluster.exceptions.TaskclusterAuthFailure as e:
         print('TaskclusterAuthFailure: {}'.format(e.body), file=sys.stderr)
         raise

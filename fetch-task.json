@@ -1,0 +1,35 @@
+{
+    "provisionerId": "aws-provisioner-v1",
+    "workerType": "b2gtest",
+    "taskGroupId": "{task_group_id}",
+    "created": "{task_created}",
+    "deadline": "{task_deadline}",
+    "scopes": [
+        "docker-worker:relengapi-proxy:tooltool.download.internal"
+    ],
+    "payload": {
+        "image": "luser/fetch-win32-symbols:0.5",
+        "command": [
+            "/bin/sh",
+            "run.sh"
+        ],
+        "features": {
+            "relengAPIProxy": true
+        },
+        "env": {},
+        "artifacts": {
+            "public/build": {
+                "type": "directory",
+                "path": "/home/user/artifacts/",
+                "expires": "{artifacts_expires}"
+            }
+        },
+        "maxRunTime": 28800
+    },
+    "metadata": {
+        "name": "fetch-win32-symbols",
+        "description": "Fetch symbols from Microsoft's symbol server",
+        "owner": "ted@mielczarek.org",
+        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/"
+    }
+}

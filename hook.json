@@ -1,0 +1,28 @@
+{
+    "provisionerId": "aws-provisioner-v1",
+    "workerType": "b2gtest",
+    "scopes": [
+        "queue:create-task:aws-provisioner-v1/b2gtest",
+        "queue:create-task:aws-provisioner-v1/symbol-upload",
+        "docker-worker:relengapi-proxy:tooltool.download.internal",
+        "docker-worker:image:taskclusterprivate/upload_symbols:0.0.3"
+    ],
+    "payload": {
+        "image": "luser/taskcluster-decision:0.1",
+        "features": {
+            "taskclusterProxy": true
+        },
+        "command": [
+            "/bin/bash",
+            "-c",
+            "hg clone https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/ && cd fetch-win32-symbols && python run-taskcluster.py"
+        ],
+        "maxRunTime": 600
+    },
+    "metadata": {
+        "name": "Win32 symbol fetching decision task",
+        "description": "Decision task to be scheduled as a Taskcluster hook to run Win32 symbol fetching tasks",
+        "owner": "ted@mielczarek.org",
+        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/file/tip/hook.json"
+    }
+}
