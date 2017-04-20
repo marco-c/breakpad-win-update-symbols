@@ -1,0 +1,18 @@
+The scripts in this repository exist to get a list of modules from crash
+reports on crash-stats.mozilla.com that were missing symbols, fetch any
+of those symbols that exist on Microsoft's symbol server, and upload them
+to the Mozilla symbol server.
+
+It is currently configured to run as a daily task in Taskcluster:
+https://tools.taskcluster.net/hooks/#project-socorro/fetch-win32-symbols
+
+The task definition used to create the hook task is contained in hook.json.
+
+decision/Dockerfile defines a minimal Docker image (currently
+luser/taskcluster-decision:0.1) in which to run the decision task
+(run-taskcluster.py) which simply schedules the other tasks
+({fetch,upload}-task.json}. The decision task always clones the latest
+version of this repository.
+
+The root Dockerfile defines a Docker image (currently
+luser/fetch-win32-symbols:0.5) in which to run the symsrv-fetch.py script.
