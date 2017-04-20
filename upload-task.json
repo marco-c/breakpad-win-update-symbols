@@ -23,6 +23,6 @@
         "name": "Upload Symbols",
         "description": "Upload Symbols",
         "owner": "ted@mielczarek.org",
-        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/"
+        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/file/tip/upload-task.json"
     }
 }
