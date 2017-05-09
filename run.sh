@@ -2,9 +2,9 @@
 
 set -v -e -x
 
-: SCRIPT_URL              ${SCRIPT_URL:=https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/raw-file/default/symsrv-fetch.py}
+base="$(realpath $(dirname $0))"
 
-cd dump_syms
+cd /home/user/dump_syms
 if test -n "$LOCAL"; then
     EXTRA="--authentication-file=/home/user/luser/tooltool-download-token"
 else
@@ -15,7 +15,5 @@ python ../tooltool.py -v ${EXTRA} -m dump-syms.manifest fetch
 
 cd ..
 
-wget -O symsrv-fetch.py "${SCRIPT_URL}"
-python symsrv-fetch.py -v $*
 mkdir artifacts
-mv symbols-*.zip artifacts/target.crashreporter-symbols.zip
+python "${base}/symsrv-fetch.py" -v artifacts/target.crashreporter-symbols.zip

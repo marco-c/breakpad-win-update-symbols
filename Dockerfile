@@ -11,14 +11,14 @@ RUN dpkg --add-architecture i386 \
   && apt-get install -y software-properties-common \
   && add-apt-repository ppa:pipelight/stable \
   && apt-get update \
-  && apt-get install -y --install-recommends wine-staging python-pip cabextract wget
-RUN pip install requests
+  && apt-get install -y --install-recommends wine-staging python-pip cabextract wget python-dev
+RUN pip install requests mercurial
 RUN useradd -d /home/user -s /bin/bash -m user
 WORKDIR /home/user
 RUN mkdir dump_syms
 ADD dump-syms.manifest /home/user/dump_syms/
 ADD config.py.docker /home/user/config.py
 ADD https://github.com/mozilla/build-tooltool/raw/master/tooltool.py /home/user/tooltool.py
-ADD run.sh /home/user/
+ADD start.sh /home/user/
 RUN chown -R user.user /home/user
 USER user

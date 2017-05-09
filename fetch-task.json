@@ -8,19 +8,19 @@
         "index.project.socorro.fetch-win32-symbols.latest",
         "index.project.socorro.fetch-win32-symbols.{date_index}",
         "notify.email.stability@mozilla.org.on-failed",
-        "notify.irc-channel.#stability.on-failed"
+        "notify.irc-channel.#uptime.on-failed"
     ],
     "scopes": [
         "docker-worker:relengapi-proxy:tooltool.download.internal",
         "queue:route:index.project.socorro.fetch-win32-symbols.*",
         "queue:route:notify.email.stability@mozilla.org.*",
-        "queue:route:notify.irc-channel.#stability.*"
+        "queue:route:notify.irc-channel.#uptime.*"
     ],
     "payload": {
-        "image": "luser/fetch-win32-symbols:0.5",
+        "image": "luser/fetch-win32-symbols:0.6",
         "command": [
             "/bin/sh",
-            "run.sh"
+            "start.sh"
         ],
         "features": {
             "relengAPIProxy": true

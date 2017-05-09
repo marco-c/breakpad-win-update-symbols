@@ -24,6 +24,7 @@
 # The script also depends on having write access to the directory it is
 # installed in, to write the skiplist text file.
 
+import argparse
 import codecs
 import config
 import sys
@@ -177,6 +178,11 @@ def fetch_missing_symbols(log):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description='Fetch missing symbols from Microsoft symbol server')
+    parser.add_argument('zip', type=str, help='output zip file')
+    args = parser.parse_args()
+
     start = datetime.datetime.now()
     verbose = False
     if len(sys.argv) > 1 and sys.argv[1] == '-v':
@@ -377,12 +383,11 @@ def main():
     index_filename = 'microsoftsyms-1.0-WINNT-%s-symbols.txt' % buildid
     log.debug('Adding %s' % index_filename)
     success = False
-    zipname = "symbols-%s.zip" % buildid
-    with zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(args.zip, 'w', zipfile.ZIP_DEFLATED) as z:
         for f in file_index:
             z.write(os.path.join(symbol_path, f), f)
         z.writestr(index_filename, '\n'.join(file_index))
-    log.info('Wrote zip as %s' % zipname)
+    log.info('Wrote zip as %s' % args.zip)
 
     shutil.rmtree(symbol_path, True)
 
