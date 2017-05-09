@@ -186,7 +186,7 @@ def main():
     start = datetime.datetime.now()
     verbose = True
 
-    log.setLevel(logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.ERROR)
     formatter = logging.Formatter(fmt='%(asctime)-15s %(message)s',
