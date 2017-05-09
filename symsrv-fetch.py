@@ -168,8 +168,7 @@ def write_skiplist(skiplist):
         log.exception('Error writing skiplist.txt')
 
 
-def fetch_missing_symbols(log):
-    u = MISSING_SYMBOLS_URL
+def fetch_missing_symbols(u):
     log.info('Trying missing symbols from %s' % u)
     r = requests.get(u)
     if r.status_code == 200 and len(r.text) > 0:
@@ -180,6 +179,8 @@ def fetch_missing_symbols(log):
 def main():
     parser = argparse.ArgumentParser(
         description='Fetch missing symbols from Microsoft symbol server')
+    parser.add_argument('--missing-symbols', type=str, help='missing symbols URL',
+                        default=MISSING_SYMBOLS_URL)
     parser.add_argument('zip', type=str, help='output zip file')
     args = parser.parse_args()
 
@@ -205,6 +206,7 @@ def main():
         blacklist = set()
     log.debug('Blacklist contains %d items' % len(blacklist))
 
+    #TODO: rework these as taskcluster artifacts?
     # Symbols that we know belong to Microsoft, so don't skiplist them.
     try:
         known_ms_symbols = set(
@@ -239,24 +241,7 @@ def main():
     log.debug('Skiplist contains %d items' % skipcount)
 
     modules = defaultdict(set)
-    if len(sys.argv) > 1:
-        url = sys.argv[1]
-        if os.path.isfile(url):
-            log.debug("Loading missing symbols file %s" % url)
-            missing_symbols = codecs.open(url, 'r', 'utf_8').read()
-        else:
-            log.debug("Loading missing symbols URL %s" % url)
-            fetch_error = False
-            try:
-                req = requests.get(url)
-            except requests.exceptions.RequestException as e:
-                fetch_error = True
-            if fetch_error or req.status_code != 200:
-                log.exception("Error fetching symbols")
-                sys.exit(1)
-            missing_symbols = req.text
-    else:
-        missing_symbols = fetch_missing_symbols(log)
+    missing_symbols = fetch_missing_symbols(args.missing_symbols)
 
     lines = iter(missing_symbols.splitlines())
     # Skip header
