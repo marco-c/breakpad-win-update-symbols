@@ -109,6 +109,7 @@ def main():
         'task_created': format_timedelta(now),
         'task_deadline': format_timedelta(now, hours=8),
         'artifacts_expires': format_timedelta(now, days=1),
+        'date_index': now.strftime('%Y%m%d%H%M%S'),
     }
     try:
         queue = taskcluster.Queue(options)

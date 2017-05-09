@@ -4,8 +4,17 @@
     "taskGroupId": "{task_group_id}",
     "created": "{task_created}",
     "deadline": "{task_deadline}",
+    "routes": [
+        "index.project.socorro.fetch-win32-symbols.latest",
+        "index.project.socorro.fetch-win32-symbols.{date_index}",
+        "notify.email.stability@mozilla.org.on-failed",
+        "notify.irc-channel.#stability.on-failed"
+    ],
     "scopes": [
-        "docker-worker:relengapi-proxy:tooltool.download.internal"
+        "docker-worker:relengapi-proxy:tooltool.download.internal",
+        "queue:route:index.project.socorro.fetch-win32-symbols.*",
+        "queue:route:notify.email.stability@mozilla.org.*",
+        "queue:route:notify.irc-channel.#stability.*"
     ],
     "payload": {
         "image": "luser/fetch-win32-symbols:0.5",
