@@ -184,32 +184,13 @@ def main():
     args = parser.parse_args()
 
     start = datetime.datetime.now()
-    verbose = False
-    if len(sys.argv) > 1 and sys.argv[1] == '-v':
-        verbose = True
-        sys.argv.pop(1)
+    verbose = True
 
     log.setLevel(logging.DEBUG)
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.ERROR)
     formatter = logging.Formatter(fmt='%(asctime)-15s %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
-    filelog = logging.FileHandler(filename=os.path.join(thisdir,
-                                                        'symsrv-fetch.log'))
-    filelog.setLevel(logging.INFO)
-    filelog.setFormatter(formatter)
-    log.addHandler(filelog)
-
-    if verbose:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.DEBUG)
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
-        verboselog = logging.FileHandler(filename=os.path.join(thisdir,
-                                                               'verbose.log'))
-        verboselog.setFormatter(formatter)
-        log.addHandler(verboselog)
-
     log.info('Started')
 
     # Symbols that we know belong to us, so don't ask Microsoft for them.
