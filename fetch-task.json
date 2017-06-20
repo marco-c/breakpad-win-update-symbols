@@ -8,12 +8,14 @@
         "index.project.socorro.fetch-win32-symbols.latest",
         "index.project.socorro.fetch-win32-symbols.{date_index}",
         "notify.email.stability@mozilla.org.on-failed",
+        "notify.email.afilip@mozilla.com.on-failed",
         "notify.irc-channel.#uptime.on-failed"
     ],
     "scopes": [
         "docker-worker:relengapi-proxy:tooltool.download.internal",
         "queue:route:index.project.socorro.fetch-win32-symbols.*",
         "queue:route:notify.email.stability@mozilla.org.*",
+        "queue:route:notify.email.afilip@mozilla.com.*",
         "queue:route:notify.irc-channel.#uptime.*"
     ],
     "payload": {
