@@ -15,5 +15,5 @@ python ../tooltool.py -v ${EXTRA} -m dump-syms.manifest fetch
 
 cd ..
 
-mkdir artifacts
+mkdir -p artifacts
 PYTHONPATH=$PWD python "${base}/symsrv-fetch.py" artifacts/target.crashreporter-symbols.zip

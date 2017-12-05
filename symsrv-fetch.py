@@ -71,10 +71,11 @@ def fetch_symbol(debug_id, debug_file):
     '''
     Attempt to fetch a PDB file from Microsoft's symbol server.
     '''
+    #TODO: figure out how to request compressed symbols nowadays.
     url = urlparse.urljoin(MICROSOFT_SYMBOL_SERVER,
                            os.path.join(debug_file,
                                         debug_id,
-                                        debug_file[:-1] + '_'))
+                                        debug_file))
     try:
         r = requests.get(url,
                          headers={'User-Agent': USER_AGENT})
@@ -92,7 +93,17 @@ def fetch_symbol_and_decompress(tmpdir, debug_id, debug_file):
     Returns the filename if successful, or None if unsuccessful.
     '''
     data = fetch_symbol(debug_id, debug_file)
-    if not data or not data.startswith(b'MSCF'):
+    if not data:
+        return None
+    # Check for PDB/PE signature.
+    if data.startswith(b'Microsoft C/C++ MSF 7.00') or data.startswith(b'MZ'):
+        # Uncompressed file, just write it out and return it.
+        path = os.path.join(tmpdir, debug_file.lower())
+        with open(path, 'wb') as f:
+            f.write(data)
+        return path
+    if not data.startswith(b'MSCF'):
+        # Not a cabinet file.
         return None
     path = os.path.join(tmpdir, debug_file[:-1] + '_')
     with open(path, 'wb') as f:
