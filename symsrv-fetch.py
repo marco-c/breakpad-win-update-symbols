@@ -49,8 +49,7 @@ MICROSOFT_SYMBOL_SERVER = 'http://msdl.microsoft.com/download/symbols/'
 USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
 MOZILLA_SYMBOL_SERVER = ('https://s3-us-west-2.amazonaws.com/'
                          'org.mozilla.crash-stats.symbols-public/v1/')
-UPLOAD_URL = 'https://crash-stats.mozilla.com/symbols/upload'
-MISSING_SYMBOLS_URL = 'https://org-mozilla-missingsymbols.s3.amazonaws.com/latest.csv'
+MISSING_SYMBOLS_URL = 'https://symbols.mozilla.org/missingsymbols.csv'
 
 thisdir = os.path.dirname(__file__)
 log = logging.getLogger()
