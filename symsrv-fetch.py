@@ -181,9 +181,8 @@ def write_skiplist(skiplist):
 def fetch_missing_symbols(u):
     log.info('Trying missing symbols from %s' % u)
     r = requests.get(u)
-    if r.status_code == 200 and len(r.text) > 0:
-        return r.text
-    return None
+    r.raise_for_status()
+    return r.text
 
 
 def main():
