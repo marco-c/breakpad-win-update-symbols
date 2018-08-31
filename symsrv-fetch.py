@@ -25,17 +25,12 @@
 # installed in, to write the skiplist text file.
 
 import argparse
-import codecs
 import config
 import sys
 import os
-import time
 import datetime
 import subprocess
-import io
-import gzip
 import shutil
-import ctypes
 import logging
 from collections import defaultdict
 from tempfile import mkdtemp
@@ -62,6 +57,7 @@ class Win64ProcessError(Exception):
 # Don't run continuously for more than 2 hours.
 MAX_RUNTIME_SECS = 7200
 
+
 def timed_out(start):
     return (datetime.datetime.now() - start).total_seconds() > MAX_RUNTIME_SECS
 
@@ -70,7 +66,7 @@ def fetch_symbol(debug_id, debug_file):
     '''
     Attempt to fetch a PDB file from Microsoft's symbol server.
     '''
-    #TODO: figure out how to request compressed symbols nowadays.
+    # TODO: figure out how to request compressed symbols nowadays.
     url = urlparse.urljoin(MICROSOFT_SYMBOL_SERVER,
                            os.path.join(debug_file,
                                         debug_id,
@@ -199,8 +195,8 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.ERROR)
-    formatter = logging.Formatter(fmt='%(asctime)-15s %(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
+    # formatter = logging.Formatter(fmt='%(asctime)-15s %(message)s',
+    #                               datefmt='%Y-%m-%d %H:%M:%S')
     log.info('Started')
 
     # Symbols that we know belong to us, so don't ask Microsoft for them.
@@ -215,7 +211,7 @@ def main():
         blacklist = set()
     log.debug('Blacklist contains %d items' % len(blacklist))
 
-    #TODO: rework these as taskcluster artifacts?
+    # TODO: rework these as taskcluster artifacts?
     # Symbols that we know belong to Microsoft, so don't skiplist them.
     try:
         known_ms_symbols = set(
@@ -278,7 +274,7 @@ def main():
     existing_count = 0
     not_found_count = 0
     not_processed_count = 0
-    file_index = []
+    file_index = set()
     # Now try to fetch all the unknown modules from the symbol server
     for filename, ids in modules.iteritems():
         if timed_out(start):
@@ -305,7 +301,8 @@ def main():
                 continue
             rel_path = os.path.join(filename, id,
                                     filename.replace('.pdb', '') + '.sym')
-            if server_has_file(rel_path):
+            key = rel_path.replace('\\', '/')
+            if server_has_file(rel_path) or key in file_index:
                 log.debug('%s/%s already on server', filename, id)
                 existing_count += 1
                 continue
@@ -324,7 +321,7 @@ def main():
                         id)
                 else:
                     log.debug('Successfully downloaded %s/%s', filename, id)
-                    file_index.append(rel_path.replace('\\', '/'))
+                    file_index.add(key)
                     sym_file = os.path.join(symbol_path, rel_path)
                     try:
                         os.makedirs(os.path.dirname(sym_file))
@@ -354,14 +351,9 @@ def main():
         sys.exit(0)
 
     # Write an index file
-    buildid = time.strftime('%Y%m%d%H%M%S', time.localtime())
-    index_filename = 'microsoftsyms-1.0-WINNT-%s-symbols.txt' % buildid
-    log.debug('Adding %s' % index_filename)
-    success = False
     with zipfile.ZipFile(args.zip, 'w', zipfile.ZIP_DEFLATED) as z:
         for f in file_index:
             z.write(os.path.join(symbol_path, f), f)
-        z.writestr(index_filename, '\n'.join(file_index))
     log.info('Wrote zip as %s' % args.zip)
 
     shutil.rmtree(symbol_path, True)
@@ -370,6 +362,7 @@ def main():
     write_skiplist(skiplist)
     log.info('Stored %d symbol files' % len(file_index))
     log.info('Finished, exiting')
+
 
 if __name__ == '__main__':
     main()
