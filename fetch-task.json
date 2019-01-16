@@ -40,7 +40,7 @@
     "metadata": {
         "name": "fetch-win32-symbols",
         "description": "Fetch symbols from Microsoft's symbol server",
-        "owner": "ted@mielczarek.org",
-        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/file/tip/fetch-task.json"
+        "owner": "mcastelluccio@mozilla.com",
+        "source": "https://github.com/marco-c/breakpad-win-update-symbols/blob/master/fetch-task.json"
     }
 }
