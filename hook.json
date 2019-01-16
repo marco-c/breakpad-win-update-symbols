@@ -15,14 +15,14 @@
         "command": [
             "/bin/bash",
             "-c",
-            "hg clone https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/ && cd fetch-win32-symbols && python run-taskcluster.py"
+            "git clone https://github.com/marco-c/breakpad-win-update-symbols && cd breakpad-win-update-symbols && python run-taskcluster.py"
         ],
         "maxRunTime": 600
     },
     "metadata": {
         "name": "Win32 symbol fetching decision task",
         "description": "Decision task to be scheduled as a Taskcluster hook to run Win32 symbol fetching tasks",
-        "owner": "ted@mielczarek.org",
-        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/file/tip/hook.json"
+        "owner": "mcastelluccio@mozilla.com",
+        "source": "https://github.com/marco-c/breakpad-win-update-symbols/blob/master/hook.json"
     }
 }
