@@ -5,6 +5,10 @@
     "deadline": "{task_deadline}",
     "taskGroupId": "{task_group_id}",
     "dependencies":   ["{fetch_task_id}"],
+    "routes": [
+        "notify.email.stability@mozilla.org.on-failed",
+        "notify.irc-channel.#uptime.on-failed"
+    ],
     "scopes": [
         "secrets:get:project/socorro/symbol-upload"
     ],
