@@ -6,24 +6,28 @@
     "taskGroupId": "{task_group_id}",
     "dependencies":   ["{fetch_task_id}"],
     "scopes": [
-        "docker-worker:image:taskclusterprivate/upload_symbols:0.0.3"
+        "secrets:get:project/socorro/symbol-upload"
     ],
     "payload": {
-        "image": "taskclusterprivate/upload_symbols:0.0.3",
+        "image": "python",
+        "features": {
+            "taskclusterProxy": true
+        },
         "command": [
             "/bin/bash",
-            "bin/upload.sh"
+            "-c",
+            "git clone https://github.com/marco-c/breakpad-win-update-symbols && cd breakpad-win-update-symbols && /bin/bash upload.sh"
         ],
         "env": {
             "ARTIFACT_TASKID": "{fetch_task_id}",
-            "GECKO_HEAD_REV": "04f52fb15e76"
+            "SYMBOL_SECRET": "project/socorro/symbol-upload"
         },
         "maxRunTime": 7200
     },
     "metadata": {
         "name": "Upload Symbols",
         "description": "Upload Symbols",
-        "owner": "ted@mielczarek.org",
-        "source": "https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/file/tip/upload-task.json"
+        "owner": "mcastelluccio@mozilla.com",
+        "source": "https://github.com/marco-c/breakpad-win-update-symbols/blob/master/upload-task.json"
     }
 }
