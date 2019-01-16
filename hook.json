@@ -5,7 +5,7 @@
         "assume:hook-id:project-socorro/fetch-win32-symbols"
     ],
     "payload": {
-        "image": "luser/taskcluster-decision:0.1",
+        "image": "luser/taskcluster-decision:0.2",
         "features": {
             "taskclusterProxy": true
         },
