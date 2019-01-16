@@ -2,10 +2,7 @@
     "provisionerId": "aws-provisioner-v1",
     "workerType": "b2gtest",
     "scopes": [
-        "queue:create-task:aws-provisioner-v1/b2gtest",
-        "queue:create-task:aws-provisioner-v1/symbol-upload",
-        "docker-worker:relengapi-proxy:tooltool.download.internal",
-        "docker-worker:image:taskclusterprivate/upload_symbols:0.0.3"
+        "assume:hook-id:project-socorro/fetch-win32-symbols"
     ],
     "payload": {
         "image": "luser/taskcluster-decision:0.1",
