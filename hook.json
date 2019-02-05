@@ -1,6 +1,6 @@
 {
     "provisionerId": "aws-provisioner-v1",
-    "workerType": "b2gtest",
+    "workerType": "symbol-upload",
     "scopes": [
         "assume:hook-id:project-socorro/fetch-win32-symbols"
     ],
