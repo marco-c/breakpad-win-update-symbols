@@ -11,7 +11,7 @@ RUN dpkg --add-architecture i386 \
   && apt-get install -y software-properties-common \
   && add-apt-repository ppa:pipelight/stable \
   && apt-get update \
-  && apt-get install -y --install-recommends wine-staging cabextract wget python-dev build-essential
+  && apt-get install -y --install-recommends wine-staging cabextract wget python-dev build-essential git
 RUN useradd -d /home/user -s /bin/bash -m user
 WORKDIR /home/user
 RUN mkdir dump_syms
