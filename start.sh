@@ -2,6 +2,6 @@
 
 set -v -e -x
 
-hg clone https://hg.mozilla.org/users/tmielczarek_mozilla.com/fetch-win32-symbols/
-cd fetch-win32-symbols
+git clone https://github.com/marco-c/breakpad-win-update-symbols
+cd breakpad-win-update-symbols
 ./run.sh
