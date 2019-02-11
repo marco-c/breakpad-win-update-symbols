@@ -19,7 +19,7 @@
         "queue:route:notify.irc-channel.#uptime.*"
     ],
     "payload": {
-        "image": "luser/fetch-win32-symbols:0.7",
+        "image": "marcocas/breakpad-win-update-symbols:0.8",
         "command": [
             "/bin/sh",
             "start.sh"

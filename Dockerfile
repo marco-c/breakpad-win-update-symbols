@@ -1,4 +1,4 @@
-FROM ubuntu:15.04
+FROM ubuntu:16.04
 # If host is running squid-deb-proxy on port 8000, populate /etc/apt/apt.conf.d/30proxy
 # By default, squid-deb-proxy 403s unknown sources, so apt shouldn't proxy ppa.launchpad.net
 RUN awk '/^[a-z]+[0-9]+\t00000000/ { printf("%d.%d.%d.%d\n", "0x" substr($3, 7, 2), "0x" substr($3, 5, 2), "0x" substr($3, 3, 2), "0x" substr($3, 1, 2)) }' < /proc/net/route > /tmp/host_ip.txt
@@ -12,8 +12,6 @@ RUN dpkg --add-architecture i386 \
   && add-apt-repository ppa:pipelight/stable \
   && apt-get update \
   && apt-get install -y --install-recommends wine-staging cabextract wget python-dev build-essential
-RUN wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py
-RUN pip install --upgrade requests mercurial
 RUN useradd -d /home/user -s /bin/bash -m user
 WORKDIR /home/user
 RUN mkdir dump_syms
