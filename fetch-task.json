@@ -19,7 +19,7 @@
         "queue:route:notify.irc-channel.#uptime.*"
     ],
     "payload": {
-        "image": "marcocas/breakpad-win-update-symbols:0.9",
+        "image": "marcocas/breakpad-win-update-symbols:0.10",
         "command": [
             "/bin/sh",
             "start.sh"
