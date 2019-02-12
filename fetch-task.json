@@ -12,7 +12,7 @@
         "notify.irc-channel.#uptime.on-failed"
     ],
     "scopes": [
-        "docker-worker:relengapi-proxy:tooltool.download.internal",
+        "project:releng:services/tooltool/api/download/internal",
         "queue:route:index.project.socorro.fetch-win32-symbols.*",
         "queue:route:notify.email.stability@mozilla.org.*",
         "queue:route:notify.email.afilip@mozilla.com.*",
@@ -25,7 +25,7 @@
             "start.sh"
         ],
         "features": {
-            "relengAPIProxy": true
+            "taskclusterProxy": true
         },
         "env": {},
         "artifacts": {
