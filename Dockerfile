@@ -12,6 +12,8 @@ RUN dpkg --add-architecture i386 \
   && add-apt-repository ppa:pipelight/stable \
   && apt-get update \
   && apt-get install -y --install-recommends wine-staging cabextract wget python-dev build-essential git
+RUN wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py
+RUN pip install --upgrade requests
 RUN useradd -d /home/user -s /bin/bash -m user
 WORKDIR /home/user
 RUN mkdir dump_syms
