@@ -1,6 +1,6 @@
 {
     "provisionerId": "aws-provisioner-v1",
-    "workerType": "symbol-upload",
+    "workerType": "taskcluster-generic",
     "scopes": [
         "assume:hook-id:project-socorro/fetch-win32-symbols"
     ],
