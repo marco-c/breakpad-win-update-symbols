@@ -15,4 +15,4 @@ luser/taskcluster-decision:0.1) in which to run the decision task
 version of this repository.
 
 The root Dockerfile defines a Docker image (currently
-marcocas/fetch-win32-symbols:0.10) in which to run the symsrv-fetch.py script.
+marcocas/breakpad-win-update-symbols) in which to run the symsrv-fetch.py script.
