@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:3.7-slim
 
 RUN useradd -d /home/user -s /bin/bash -m user
 WORKDIR /home/user
